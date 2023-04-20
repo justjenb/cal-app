@@ -1,81 +1,79 @@
-// GIVEN I am using a daily planner to create a schedule
-// WHEN I open the planner
-// THEN the current day is displayed at the top of the calendar
-// WHEN I scroll down
-// THEN I am presented with timeblocks for standard business hours
-// WHEN I view the timeblocks for that day
-// THEN each timeblock is color coded to indicate whether it is in the past, present, or future
-// WHEN I click into a timeblock
-// THEN I can enter an event
-// WHEN I click the save button for that timeblock
-// THEN the text for that event is saved in local storage
-// WHEN I refresh the page
-// THEN the saved events persist
+// save button event listener
+$(".saveBtn").on("click", function (event) {
+  var rowId = event.currentTarget.parentNode.id;
+  var rowTextContentArea = $("#" + rowId).find("textarea");
+  var rowTextContent = rowTextContentArea.val();
+  var newEvent = {
+    id: rowId,
+    text: rowTextContent,
+  };
+  var calEvents = readEventsFromStorage();
+  calEvents.push(newEvent);
+  localStorage.setItem("calEvents", JSON.stringify(calEvents));
+});
 
-$(window).on("load",function(e) {
+// clears all data from the calendar
+$("#clearCalendarBtn").on("click", function () {
+  localStorage.removeItem("calEvents");
+  $(".time-block textarea").val("");
+});
 
-$(function () {
+// populates all the events saved in storage
+function populateEvents() {
+  var calEvents = readEventsFromStorage();
 
-    // TODO: Add a listener for click events on the save button. This code should
-  // use the id in the containing time-block as a key to save the user input in
-  // local storage. HINT: What does `this` reference in the click listener
-  // function? How can DOM traversal be used to get the "hour-x" id of the
-  // time-block containing the button that was clicked? How might the id be
-  // useful when saving the description in local storage?
-  
-  $('.saveBtn').on('click', function(event){
+  for (var i = 0; i < calEvents.length; i += 1) {
+    var event = calEvents[i];
+    var rowId = event.id;
+    var rowTextContent = event.text;
+    $("#" + rowId)
+      .find("textarea")
+      .val(rowTextContent);
+  }
+}
 
-    var rowId = event.currentTarget.parentNode.id;
-    console.log(rowId);
-    var rowTextContentArea = $('#' + rowId).find("textarea");
-    console.log(rowTextContentArea);
-    var rowTextContent = rowTextContentArea.val();
-    console.log(rowTextContent);
+// returns an empty array if there are no events saved
+function readEventsFromStorage() {
+  var storedCalEvents = localStorage.getItem("calEvents");
+  if (storedCalEvents) {
+    return JSON.parse(storedCalEvents);
+  } else {
+    return [];
+  }
+}
 
-  })
+// changes events color based on the id hour match with dayJS
+function changeEventColor() {
+  const timeBlocks = $("div").filter(".time-block");
+  var currentHour = dayjs().format("H");
 
-  function changeEventColor() {
+  for (var i = 0; i < timeBlocks.length; i += 1) {
+    var timeBlock = timeBlocks[i];
+    var id = timeBlock.id;
+    var idHourMatch = id.match(/[0-9]+/);
+    var idHour = parseInt(idHourMatch, 10);
 
-    const timeBlocks = $( "div" ).filter(".time-block");
-    var currentHour = dayjs().format('H');
-
-    for (var i = 0; i < timeBlocks.length; i += 1) {
-      var timeBlock = timeBlocks[i];
-      var id = timeBlock.id;
-      var idHourMatch = id.match(/[0-9]+/);
-      var idHour = parseInt(idHourMatch, 10);
-  
-      if (idHour < currentHour) {
-        $(timeBlock).addClass('past');
-      } else if (idHour == currentHour) {
-        $(timeBlock).addClass('present');
-      } else if (idHour > currentHour) {
-        $(timeBlock).addClass('future');
-      }
+    if (idHour < currentHour) {
+      $(timeBlock).addClass("past");
+    } else if (idHour == currentHour) {
+      $(timeBlock).addClass("present");
+    } else if (idHour > currentHour) {
+      $(timeBlock).addClass("future");
     }
   }
-  
-  changeEventColor();
+}
 
-  //
-  // TODO: Add code to get any user input that was saved in localStorage and set
-  // the values of the corresponding textarea elements. HINT: How can the id
-  // attribute of each time-block be used to do this?
-  //
+// display current date/time
+function displayTime() {
+  var dateDisplayEl = $("#currentDay");
+  var rightNow = dayjs().format("dddd, MMM DD, YYYY [at] hh:mm:ss a");
+  dateDisplayEl.text(rightNow);
+}
 
-
-
-
-
-
-
-  function displayTime() {
-    var dateDisplayEl = $('#currentDay');
-    var rightNow = dayjs().format('dddd, MMM DD, YYYY [at] hh:mm:ss a');
-    dateDisplayEl.text(rightNow);
-  } 
+// when document is ready, run these functions
+$(document).ready(function () {
   displayTime();
   setInterval(displayTime, 1000);
-
-  });
+  changeEventColor();
+  populateEvents();
 });
